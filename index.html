@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Class Monitor Vote</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+</head>
+<body>
+    <div class="container" style="text-align: center;">
+        <h1>Class Monitor Vote</h1>
+        <p>Total Votes: <span id="totalVotes">0</span></p>
+
+        <span>
+            <label for="studentName">Student Name:</label>
+            <input type="text" id="studentName" placeholder="Enter your name" style="margin-bottom: 10px;">
+            <label for="monitor">Choose Monitor:</label>
+            <select id="monitor">
+                <option value="Suresh">Suresh</option>
+                <option value="Deepank">Deepank</option>
+                <option value="Abhik">Abhik</option>
+            </select>
+            <button onclick="vote()">Vote</button>
+        </span>
+
+        <div id="candidates" style="text-align: left;">
+            <p><strong>Suresh</strong><br>Total <span id="sureshVotes">0</span></p>
+            <div id="sureshVoters"></div>
+
+            <p><strong>Deepank</strong><br>Total <span id="deepankVotes">0</span></p>
+            <div id="deepankVoters"></div>
+
+            <p><strong>Abhik</strong><br>Total <span id="abhikVotes">0</span></p>
+            <div id="abhikVoters"></div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize candidates data
+        let candidates = {
+            Suresh: {
+                votes: 0,
+                voters: []
+            },
+            Deepank: {
+                votes: 0,
+                voters: []
+            },
+            Abhik: {
+                votes: 0,
+                voters: []
+            }
+        };
+
+        let totalVotes = 0;
+
+        function updateUI() {
+            // Update total votes
+            document.getElementById('totalVotes').innerText = totalVotes;
+
+            // Update each candidate's votes and voters
+            for (const candidate in candidates) {
+                document.getElementById(`${candidate.toLowerCase()}Votes`).innerText = candidates[candidate].votes;
+                const votersDiv = document.getElementById(`${candidate.toLowerCase()}Voters`);
+                votersDiv.innerHTML = ''; // Clear previous voters
+
+                candidates[candidate].voters.forEach(voter => {
+                    const voterElement = document.createElement('div');
+                    voterElement.innerText = voter;
+
+                    // Create a delete button to remove the voter
+                    const deleteButton = document.createElement('button');
+                    deleteButton.innerText = 'Delete';
+                    deleteButton.onclick = () => deleteVote(voter, candidate);
+                    voterElement.appendChild(deleteButton);
+                    votersDiv.appendChild(voterElement);
+                });
+            }
+        }
+
+        function vote() {
+            const studentName = document.getElementById('studentName').value;
+            const selectedMonitor = document.getElementById('monitor').value;
+
+            if (!studentName) {
+                alert("Please enter your name.");
+                return;
+            }
+
+            // Check if the student has already voted
+            for (const candidate in candidates) {
+                if (candidates[candidate].voters.includes(studentName)) {
+                    alert("You have already voted.");
+                    return;
+                }
+            }
+
+            // Create a vote
+            createVote(selectedMonitor, studentName);
+        }
+
+        function createVote(monitor, voterName) {
+    candidates[monitor].votes++;
+    candidates[monitor].voters.push(voterName);
+    totalVotes++;
+    updateUI();
+
+    // Send POST request to CRUD
+    axios.post('https://crudcrud.com/api/f36c10b8180d4176bbd90875d4841442/votes', {
+        monitor: monitor,
+        voterName: voterName
+    })
+    .then(response => {
+        console.log('Vote created:', response.data);
+    })
+    .catch(error => {
+        console.error('Error creating vote:', error);
+    });
+}
+
+function deleteVote(voterName, candidate) {
+    // Delete the voter from the candidate's list
+    const voterIndex = candidates[candidate].voters.indexOf(voterName);
+    if (voterIndex > -1) {
+        candidates[candidate].voters.splice(voterIndex, 1);
+        candidates[candidate].votes--;
+        totalVotes--;
+        updateUI();
+
+        // Send DELETE request to CRUD
+        axios.delete(`https://crudcrud.com/api/f36c10b8180d4176bbd90875d4841442/votes/${voterName}`)
+        .then(response => {
+            console.log('Vote deleted:', response.data);
+        })
+        .catch(error => {
+            console.error('Error deleting vote:', error);
+        });
+    }
+}
+        
+
+        // Initial UI update
+        updateUI();
+        
+</script>
+
+</body>
+</html>
